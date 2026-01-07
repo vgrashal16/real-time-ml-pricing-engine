@@ -1,0 +1,22 @@
+# ---- Python ----
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+venv/
+.venv/
+
+# ---- Kafka / Docker ----
+kafka_data/
+data/
+logs/
+
+# ---- Editor / OS ----
+.vscode/
+.idea/
+.DS_Store
+
+# ---- Misc ----
+*.log
+
