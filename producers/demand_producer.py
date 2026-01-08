@@ -21,9 +21,9 @@ producer = Producer({
 
 def delivery_report(err, msg):
     if err is not None:
-        print(f"❌ Delivery failed: {err}")
+        print(f"Delivery failed: {err}")
     else:
-        print(f"✅ Delivered to {msg.topic()} [{msg.partition()}]")
+        print(f"Delivered to {msg.topic()} [{msg.partition()}]")
 
 
 # -------------------------------
@@ -51,7 +51,7 @@ def generate_demand_event():
 # Main loop
 # -------------------------------
 if __name__ == "__main__":
-    print("🚕 Demand producer started. Sending events to Kafka...")
+    print("Demand producer started. Sending events to Kafka...")
 
     while True:
         event = generate_demand_event()

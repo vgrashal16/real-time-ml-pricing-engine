@@ -46,7 +46,7 @@ def decide_price(demand, drivers):
 # Main loop
 # -------------------------------
 if __name__ == "__main__":
-    print("💰 Decision engine started...")
+    print("Decision engine started...")
 
     consumer.subscribe([DEMAND_TOPIC])
 
@@ -58,7 +58,7 @@ if __name__ == "__main__":
                 continue
 
             if msg.error():
-                print(f"❌ Consumer error: {msg.error()}")
+                print(f"Consumer error: {msg.error()}")
                 continue
 
             event = json.loads(msg.value().decode("utf-8"))
@@ -84,10 +84,10 @@ if __name__ == "__main__":
             )
             producer.poll(0)
 
-            print(f"📈 Decision → {decision_event}")
+            print(f"Decision → {decision_event}")
 
     except KeyboardInterrupt:
-        print("🛑 Stopping decision engine...")
+        print("Stopping decision engine...")
 
     finally:
         consumer.close()
