@@ -13,6 +13,10 @@ BOOTSTRAP_SERVER = "localhost:9092"
 DECISION_TOPIC = "pricing_decisions"
 OUTCOME_TOPIC = "pricing_outcomes"
 
+
+# -------------------------------
+# Kafka clients
+# -------------------------------
 consumer = Consumer({
     "bootstrap.servers": BOOTSTRAP_SERVER,
     "group.id": "outcome-simulator-group",
@@ -67,17 +71,16 @@ if __name__ == "__main__":
     print("Outcome simulator started...")
 
     consumer.subscribe([DECISION_TOPIC])
-
-    '''This loop keeps the consumer running continuously, making it a long-lived service.
-    consumer.poll(timeout) asks Kafka for a new message.
-    - If a message arrives within `timeout` seconds, it is returned.
-    - If no message arrives, `None` is returned.
-    The timeout prevents the loop from blocking forever and allows the program
-    to remain responsive (e.g., for shutdowns or other checks).'''
     try:
         while True: 
             msg = consumer.poll(1.0)
-
+            '''This loop keeps the consumer running continuously, making it a long-lived service.
+            consumer.poll(timeout) asks Kafka for a new message.
+            - If a message arrives within `timeout` seconds, it is returned.
+            - If no message arrives, `None` is returned.
+            The timeout prevents the loop from blocking forever and allows the program
+            to remain responsive (e.g., for shutdowns or other checks).'''
+            
             if msg is None:
                 continue
 
