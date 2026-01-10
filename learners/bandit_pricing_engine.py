@@ -1,5 +1,6 @@
 import random
 import json
+import os
 from datetime import datetime, timezone
 from confluent_kafka import Consumer, Producer
 from collections import defaultdict
@@ -135,11 +136,7 @@ def choose_arm(context):
     best_avg = -1
 
     for arm in ARMS:
-        s = arm_stats[arm]
-
-        if s["count"] == 0:
-            return arm, "explore"
-        
+        s = arm_stats[arm]       
         avg = s["total_reward"] / s["count"]
 
         if avg > best_avg:
@@ -148,19 +145,78 @@ def choose_arm(context):
 
     return best_arm, "exploit"
 
+SAVE_EVERY = 20
+update_counter = 0
+
 def update_stats(context, arm, reward):
+    global update_counter
+
     s = stats[context][arm]
     s["count"] += 1
     s["total_reward"] += reward
+
+    update_counter += 1
+    if update_counter % SAVE_EVERY == 0:
+        save_stats()
+
     print(f"UPDATED {context} arm={arm} → count={s['count']}, total_reward={s['total_reward']}")
+
+
+STATS_FILE = "bandit_stats.json"
+
+def context_to_key(context):
+    return "|".join(context)
+
+def key_to_context(key):
+    loc, bucket = key.split("|")
+    return (loc, bucket)
+
+def save_stats():
+    if update_counter == 0:
+        return
+
+    data = {}
+
+    for context, arms in stats.items():
+        ctx_key = context_to_key(context)
+        data[ctx_key] = {}
+
+        for arm, s in arms.items():
+            data[ctx_key][str(arm)] = {
+                "count": s["count"],
+                "total_reward": s["total_reward"]
+            }
+
+    with open(STATS_FILE, "w") as f:
+        json.dump(data, f)
+
+    print("Bandit stats saved")
+
+def load_stats():
+    if not os.path.exists(STATS_FILE):
+        print("No saved stats found, starting fresh")
+        return
+
+    with open(STATS_FILE, "r") as f:
+        data = json.load(f)
+
+    for ctx_key, arms in data.items():
+        context = key_to_context(ctx_key)
+        for arm_str, s in arms.items():
+            arm = float(arm_str)
+            stats[context][arm]["count"] = s["count"]
+            stats[context][arm]["total_reward"] = s["total_reward"]
+
+    print("Bandit stats loaded")
+
 
 # -------------------------------
 # Kafka clients
 # -------------------------------
 consumer = Consumer({
     "bootstrap.servers": BOOTSTRAP_SERVER,
-    "group.id": "bandit-engine-v2",
-    "auto.offset.reset": "earliest"
+    "group.id": "bandit-pricing-decision-engine",
+    "auto.offset.reset": "latest"
 })
 
 producer = Producer({
@@ -172,11 +228,11 @@ producer = Producer({
 # -------------------------------
 
 if __name__ == "__main__":
+    load_stats()
     print("Bandit pricing engine started")
 
     consumer.subscribe([DEMAND_TOPIC, OUTCOME_TOPIC])
 
-    pending = {}
     '''
     Tracks decisions that have been made but not yet evaluated.
     Because outcomes arrive asynchronously and may be delayed, this dictionary
@@ -221,9 +277,6 @@ if __name__ == "__main__":
                     "context": context
                 }
 
-                pending[event["event_id"]] = (context, arm) 
-                # sample: pending["abc-123"] = (("Airport", "high"), 1.5)
-
                 producer.produce(
                     DECISION_TOPIC,
                     value = json.dumps(decision)
@@ -234,19 +287,21 @@ if __name__ == "__main__":
             
             # Handle outcome: update learning
             elif topic == OUTCOME_TOPIC:
-                decision_id = event["decision_id"]
+                context = tuple(event["context"])
+                arm = event["chosen_price"]
                 reward = event["revenue"]
 
-                if decision_id not in pending:
-                    continue
-
-                context, arm = pending.pop(decision_id)
                 update_stats(context, arm, reward)
 
-                print(f"Stats for bandit learning updated. Updated {context}, arm = {arm}, reward = {reward}")
-    
+                print(
+                    f"Learning update → context={context}, "
+                    f"arm={arm}, reward={reward}"
+                )
+
     except KeyboardInterrupt:
         print("Stopping bandit engine")
         
     finally:
+        save_stats()
+        producer.flush()
         consumer.close()

@@ -120,10 +120,12 @@ if __name__ == "__main__":
             outcome_event = {
                 "decision_id": decision["decision_id"],
                 "timestamp": int(datetime.now(timezone.utc).timestamp()),
-                "location": location,
+                "context": decision["context"],
+                "chosen_price": decision["chosen_price"],
                 "accepted": accepted,
                 "revenue": revenue
             }
+
 
             # Simulate delay (real systems have lag)
             time.sleep(random.uniform(2, 5))
