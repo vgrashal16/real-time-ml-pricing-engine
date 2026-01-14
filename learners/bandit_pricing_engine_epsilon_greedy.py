@@ -162,7 +162,7 @@ def update_stats(context, arm, reward):
     print(f"UPDATED {context} arm={arm} → count={s['count']}, total_reward={s['total_reward']}")
 
 
-STATS_FILE = "bandit_stats.json"
+STATS_FILE = "bandit_stats_epsilon.json"
 
 def context_to_key(context):
     return "|".join(context)

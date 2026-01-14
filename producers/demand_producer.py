@@ -11,7 +11,7 @@ from confluent_kafka import Producer
 # Kafka configuration
 # -------------------------------
 KAFKA_BOOTSTRAP_SERVERS = "localhost:9092"
-TOPIC_NAME = "demand_events"
+DEMAND_TOPIC = "demand_events"
 
 
 producer = Producer({
@@ -57,7 +57,7 @@ if __name__ == "__main__":
         event = generate_demand_event()
 
         producer.produce(
-            TOPIC_NAME,
+            DEMAND_TOPIC,
             value=json.dumps(event),
             callback=delivery_report
         )

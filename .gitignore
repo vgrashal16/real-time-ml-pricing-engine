@@ -19,4 +19,4 @@ logs/
 
 # ---- Misc ----
 *.log
-
+*.json
